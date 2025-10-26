@@ -54,8 +54,26 @@ logger.info("=" * 70)
 logger.info("🌊 HydroNet Pro - 增强版水网智能体系统")
 logger.info("=" * 70)
 logger.info(f"✅ 通义千问服务已初始化 - 模型: {Config.QWEN_MODEL}")
-logger.info(f"✅ MCP服务管理器已初始化 - {len(mcp_manager.list_services())} 个服务")
+logger.info(f"✅ MCP服务管理器已初始化 - {len(mcp_manager.list_services())} 个HydroNet服务")
 logger.info("=" * 70)
+
+
+# ==================== HydroSIS集成初始化 ====================
+
+async def init_hydrosis():
+    """异步初始化HydroSIS工具"""
+    try:
+        await mcp_manager.load_hydrosis_tools()
+    except Exception as e:
+        logger.error(f"❌ 初始化HydroSIS失败: {e}")
+
+
+# SocketIO启动事件
+@socketio.on('connect')
+def handle_connect():
+    """客户端连接事件"""
+    # 这里可以进行连接时的初始化
+    pass
 
 
 # ==================== 数据库初始化 ====================
@@ -686,13 +704,31 @@ if __name__ == '__main__':
         conn.close()
         logger.info("✅ 已创建默认用户: demo")
     
+    # 异步加载HydroSIS工具
+    logger.info("")
+    logger.info("🔄 加载HydroSIS工具...")
+    import asyncio
+    asyncio.run(init_hydrosis())
+    
     logger.info("")
     logger.info("=" * 70)
     logger.info("🚀 HydroNet Pro 启动完成！")
     logger.info("=" * 70)
     logger.info(f"🌐 访问地址: http://{Config.HOST}:{Config.PORT}")
     logger.info(f"🤖 AI模型: {Config.QWEN_MODEL}")
-    logger.info(f"🔌 MCP服务: {len(mcp_manager.list_services())} 个")
+    logger.info(f"🔌 HydroNet服务: {len(mcp_manager.list_services())} 个")
+    
+    # 显示HydroSIS状态
+    health = mcp_manager.get_health_status()
+    if health.get('hydrosis', {}).get('enabled'):
+        hydrosis_tools = health['hydrosis']['tools_count']
+        hydrosis_url = health['hydrosis']['url']
+        logger.info(f"🌊 HydroSIS工具: {hydrosis_tools} 个 ({hydrosis_url})")
+        logger.info(f"📦 总工具数: {len(mcp_manager.list_services()) + hydrosis_tools} 个")
+    else:
+        logger.info(f"⚠️ HydroSIS: 未启用")
+        logger.info(f"📦 总工具数: {len(mcp_manager.list_services())} 个")
+    
     logger.info(f"💾 数据库: {DB_PATH}")
     logger.info("=" * 70)
     logger.info("")

@@ -5,6 +5,7 @@
 参考HydroSIS云服务架构方案
 """
 
+import os
 import json
 import logging
 import aiohttp
@@ -13,6 +14,14 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# 尝试导入HydroSIS客户端
+try:
+    from hydrosis_mcp_client import HydroSISMCPClient
+    HYDROSIS_AVAILABLE = True
+except ImportError:
+    logger.warning("⚠️ HydroSIS MCP客户端未安装")
+    HYDROSIS_AVAILABLE = False
 
 
 class MCPServiceManager:
@@ -31,6 +40,28 @@ class MCPServiceManager:
         """初始化MCP服务管理器"""
         self.services = {}
         self._initialize_hydronet_services()
+        
+        # 初始化HydroSIS客户端
+        self.hydrosis_client = None
+        self.hydrosis_tools_cache = []
+        
+        if HYDROSIS_AVAILABLE and os.environ.get('HYDROSIS_MCP_ENABLED', '').lower() == 'true':
+            hydrosis_url = os.environ.get('HYDROSIS_MCP_URL', 'http://localhost:8080')
+            hydrosis_timeout = int(os.environ.get('HYDROSIS_MCP_TIMEOUT', '300'))
+            
+            try:
+                self.hydrosis_client = HydroSISMCPClient(hydrosis_url, hydrosis_timeout)
+                logger.info(f"✅ 已连接HydroSIS MCP服务器: {hydrosis_url}")
+                logger.info(f"   HydroSIS提供18个专业水文工具")
+            except Exception as e:
+                logger.error(f"❌ 连接HydroSIS服务器失败: {e}")
+                self.hydrosis_client = None
+        else:
+            if not HYDROSIS_AVAILABLE:
+                logger.info("ℹ️ HydroSIS MCP客户端未安装，仅使用HydroNet工具")
+            else:
+                logger.info("ℹ️ HydroSIS MCP未启用（设置HYDROSIS_MCP_ENABLED=true启用）")
+        
         logger.info("✅ MCP服务管理器初始化完成")
     
     def _initialize_hydronet_services(self):
@@ -210,15 +241,28 @@ class MCPServiceManager:
         """
         获取工具列表（供LLM使用）
         返回格式符合通义千问Function Calling要求
+        包括HydroNet工具 + HydroSIS工具
         """
         tools = []
+        
+        # 1. HydroNet自己的5个工具
         for service in self.services.values():
             tool = {
                 'name': service['name'],
-                'description': service['description'],
+                'description': f"[HydroNet] {service['description']}",
                 'parameters': service['parameters']
             }
             tools.append(tool)
+        
+        # 2. HydroSIS的18个工具（如果已连接）
+        if self.hydrosis_client and self.hydrosis_tools_cache:
+            for hydrosis_tool in self.hydrosis_tools_cache:
+                tool = {
+                    'name': f"hydrosis_{hydrosis_tool['name']}",
+                    'description': f"[HydroSIS] {hydrosis_tool['description']}",
+                    'parameters': hydrosis_tool.get('inputSchema', {})
+                }
+                tools.append(tool)
         
         return tools
     
@@ -231,9 +275,10 @@ class MCPServiceManager:
     ) -> Dict[str, Any]:
         """
         调用MCP工具（异步）
+        支持HydroNet工具和HydroSIS工具
         
         Args:
-            tool_name: 工具名称
+            tool_name: 工具名称（hydrosis_开头的是HydroSIS工具）
             arguments: 参数字典
             user_id: 用户ID
             timeout: 超时时间（秒）
@@ -241,13 +286,18 @@ class MCPServiceManager:
         Returns:
             工具执行结果
         """
+        logger.info(f"🔧 调用工具: {tool_name}")
+        logger.debug(f"参数: {json.dumps(arguments, ensure_ascii=False)}")
+        
+        # 检查是否是HydroSIS工具
+        if tool_name.startswith('hydrosis_'):
+            return await self._call_hydrosis_tool(tool_name, arguments, user_id, timeout)
+        
+        # HydroNet自己的工具
         if tool_name not in self.services:
             raise ValueError(f"❌ 工具不存在: {tool_name}")
         
         service = self.services[tool_name]
-        
-        logger.info(f"🔧 调用工具: {tool_name}")
-        logger.debug(f"参数: {json.dumps(arguments, ensure_ascii=False)}")
         
         # 如果配置了远程服务URL，调用远程服务
         if service.get('url'):
@@ -508,7 +558,7 @@ class MCPServiceManager:
     
     def get_health_status(self) -> Dict:
         """获取所有服务的健康状态"""
-        return {
+        status = {
             'total': len(self.services),
             'services': {
                 name: {
@@ -518,3 +568,141 @@ class MCPServiceManager:
                 for name, service in self.services.items()
             }
         }
+        
+        # 添加HydroSIS状态
+        if self.hydrosis_client:
+            status['hydrosis'] = {
+                'enabled': True,
+                'tools_count': len(self.hydrosis_tools_cache),
+                'url': os.environ.get('HYDROSIS_MCP_URL', 'http://localhost:8080')
+            }
+        else:
+            status['hydrosis'] = {
+                'enabled': False,
+                'reason': 'Not configured or unavailable'
+            }
+        
+        return status
+    
+    async def load_hydrosis_tools(self):
+        """
+        异步加载HydroSIS工具列表
+        在应用启动时调用
+        """
+        if not self.hydrosis_client:
+            logger.info("ℹ️ HydroSIS客户端未初始化，跳过工具加载")
+            return
+        
+        try:
+            # 健康检查
+            health = await self.hydrosis_client.health_check()
+            if health.get('status') != 'healthy':
+                logger.warning(f"⚠️ HydroSIS服务不健康: {health}")
+                return
+            
+            # 加载工具列表
+            tools = await self.hydrosis_client.list_tools()
+            self.hydrosis_tools_cache = tools
+            
+            logger.info(f"✅ 已加载 {len(tools)} 个HydroSIS工具")
+            
+            # 按分类统计
+            by_category = await self.hydrosis_client.get_tools_by_category()
+            for category, category_tools in by_category.items():
+                logger.info(f"   - {category}: {len(category_tools)} 个")
+        
+        except Exception as e:
+            logger.error(f"❌ 加载HydroSIS工具失败: {e}")
+            self.hydrosis_tools_cache = []
+    
+    async def _call_hydrosis_tool(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        user_id: str,
+        timeout: int
+    ) -> Dict[str, Any]:
+        """
+        调用HydroSIS MCP工具
+        
+        Args:
+            tool_name: 工具名称（带hydrosis_前缀）
+            arguments: 参数
+            user_id: 用户ID
+            timeout: 超时时间
+            
+        Returns:
+            工具执行结果
+        """
+        if not self.hydrosis_client:
+            raise Exception("❌ HydroSIS MCP客户端未初始化")
+        
+        # 移除hydrosis_前缀
+        actual_tool_name = tool_name.replace('hydrosis_', '', 1)
+        
+        logger.info(f"🌊 调用HydroSIS工具: {actual_tool_name}")
+        
+        try:
+            # 检查是否需要异步执行（某些工具耗时较长）
+            async_tools = ['run_simulation', 'calibrate_parameters', 'delineate_watershed']
+            
+            if actual_tool_name in async_tools:
+                # 提交异步任务
+                logger.info(f"   ⏳ 提交异步任务...")
+                task_info = await self.hydrosis_client.submit_async_task(
+                    actual_tool_name,
+                    arguments,
+                    user_id or 'default'
+                )
+                
+                task_id = task_info.get('task_id')
+                logger.info(f"   📋 任务ID: {task_id}")
+                
+                # 等待任务完成（带进度反馈）
+                result = await self.hydrosis_client.wait_for_task(
+                    task_id,
+                    poll_interval=2.0,
+                    max_wait=min(timeout, 600)  # 最多等待10分钟
+                )
+                
+                # 转换为统一格式
+                if result.get('status') == 'completed':
+                    return {
+                        'status': 'success',
+                        'tool': tool_name,
+                        'message': f'✅ {actual_tool_name} 执行完成',
+                        'results': result.get('results', {}),
+                        'metadata': {
+                            'task_id': task_id,
+                            'execution_time': result.get('execution_time'),
+                            'is_hydrosis': True,
+                            'is_async': True
+                        }
+                    }
+                else:
+                    raise Exception(f"任务失败: {result.get('error', '未知错误')}")
+            
+            else:
+                # 同步调用
+                result = await self.hydrosis_client.call_tool(
+                    actual_tool_name,
+                    arguments,
+                    user_id or 'default'
+                )
+                
+                # 转换为统一格式
+                return {
+                    'status': result.get('status', 'success'),
+                    'tool': tool_name,
+                    'message': f'✅ {actual_tool_name} 执行完成',
+                    'results': result.get('data', {}),
+                    'metadata': {
+                        **result.get('metadata', {}),
+                        'is_hydrosis': True,
+                        'is_async': False
+                    }
+                }
+        
+        except Exception as e:
+            logger.error(f"❌ HydroSIS工具调用失败: {e}")
+            raise Exception(f"HydroSIS工具调用失败: {str(e)}")
