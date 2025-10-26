@@ -1,0 +1,27 @@
+# HydroNet 水网智能体系统 - 本地版依赖
+# 专为本地部署优化，依赖最少
+
+# Web框架
+Flask==3.0.0
+flask-cors==4.0.0
+
+# HTTP请求（调用阿里云API）
+requests==2.31.0
+
+# 环境变量管理
+python-dotenv==1.0.0
+
+# 数据处理（可选，用于MCP服务）
+numpy==1.24.3
+
+# 日志（可选）
+colorlog==6.8.0
+
+# WSGI服务器（生产环境可选）
+gunicorn==21.2.0
+
+# 注意：
+# - 不需要PostgreSQL（使用SQLite）
+# - 不需要Redis（简化版不需要）
+# - 不需要JWT等认证库（单机版）
+# - SQLite是Python内置的，无需额外安装
