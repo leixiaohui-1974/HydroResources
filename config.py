@@ -48,3 +48,21 @@ class Config:
     # 系统配置
     MAX_CONVERSATION_HISTORY = int(os.getenv('MAX_CONVERSATION_HISTORY', 10))
     SESSION_TIMEOUT = int(os.getenv('SESSION_TIMEOUT', 3600))  # 秒
+    
+    # 数据库配置（多租户SaaS必需）
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://hydronet:password@localhost/hydronet')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True
+    }
+    
+    # JWT配置
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', SECRET_KEY)
+    JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 28800))  # 8小时
+    JWT_REFRESH_TOKEN_EXPIRES = int(os.getenv('JWT_REFRESH_TOKEN_EXPIRES', 2592000))  # 30天
+    
+    # Redis配置（用于限流和缓存）
+    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    RATELIMIT_STORAGE_URL = REDIS_URL
