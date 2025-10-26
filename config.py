@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-配置文件 - 存储应用配置和密钥
+配置文件 - 阿里云版本
 """
 
 import os
@@ -19,20 +19,14 @@ class Config:
     PORT = int(os.getenv('PORT', 5000))
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     
-    # 微信公众号配置
-    WECHAT_TOKEN = os.getenv('WECHAT_TOKEN', 'your-wechat-token')
-    WECHAT_APP_ID = os.getenv('WECHAT_APP_ID', '')
-    WECHAT_APP_SECRET = os.getenv('WECHAT_APP_SECRET', '')
+    # 阿里云API配置
+    ALIYUN_API_KEY = os.getenv('ALIYUN_API_KEY', 'your-api-key')
+    ALIYUN_REGION = os.getenv('ALIYUN_REGION', 'cn-hangzhou')
     
-    # 腾讯云API配置（元宝大模型）
-    TENCENT_SECRET_ID = os.getenv('TENCENT_SECRET_ID', 'your-secret-id')
-    TENCENT_SECRET_KEY = os.getenv('TENCENT_SECRET_KEY', 'your-secret-key')
-    TENCENT_REGION = os.getenv('TENCENT_REGION', 'ap-guangzhou')
-    
-    # 腾讯元宝大模型配置
-    HUNYUAN_MODEL = os.getenv('HUNYUAN_MODEL', 'hunyuan-lite')  # 可选: hunyuan-lite, hunyuan-standard, hunyuan-pro
-    HUNYUAN_TEMPERATURE = float(os.getenv('HUNYUAN_TEMPERATURE', '0.7'))
-    HUNYUAN_MAX_TOKENS = int(os.getenv('HUNYUAN_MAX_TOKENS', '2000'))
+    # 通义千问大模型配置
+    QWEN_MODEL = os.getenv('QWEN_MODEL', 'qwen-turbo')  # 可选: qwen-turbo, qwen-plus, qwen-max
+    QWEN_TEMPERATURE = float(os.getenv('QWEN_TEMPERATURE', '0.7'))
+    QWEN_MAX_TOKENS = int(os.getenv('QWEN_MAX_TOKENS', '2000'))
     
     # MCP服务配置
     MCP_SERVICES_DIR = os.getenv('MCP_SERVICES_DIR', './mcp_services')

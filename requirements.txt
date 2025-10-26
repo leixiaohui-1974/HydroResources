@@ -1,14 +1,8 @@
-# HydroNet 水网智能体系统依赖
+# HydroNet 水网智能体系统依赖 - 阿里云版本
 
 # Web框架
 Flask==3.0.0
 flask-cors==4.0.0
-
-# 腾讯云SDK - 混元大模型
-tencentcloud-sdk-python==3.0.1046
-
-# 微信公众号
-xmltodict==0.13.0
 
 # HTTP请求
 requests==2.31.0
