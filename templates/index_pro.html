@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroNet Pro - 水网智能体系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_pro.css') }}">
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <!-- Logo -->
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🌊</span>
+                    <span class="logo-text">HydroNet Pro</span>
+                </div>
+            </div>
+            
+            <!-- 新对话按钮 -->
+            <button class="new-chat-btn" id="newChatBtn">
+                <span class="icon">+</span>
+                <span>新对话</span>
+            </button>
+            
+            <!-- 对话列表 -->
+            <div class="conversations-container">
+                <div class="conversations-list" id="conversationsList">
+                    <!-- 对话项动态加载 -->
+                </div>
+            </div>
+            
+            <!-- 底部用户信息 -->
+            <div class="sidebar-footer">
+                <!-- 配额显示 -->
+                <div class="quota-display" id="quotaDisplay">
+                    <div class="quota-header">
+                        <span class="quota-icon">⚡</span>
+                        <span class="quota-text">API配额</span>
+                    </div>
+                    <div class="quota-progress">
+                        <div class="quota-bar">
+                            <div class="quota-fill" id="quotaFill" style="width: 15%"></div>
+                        </div>
+                        <div class="quota-numbers">
+                            <span id="quotaUsed">15</span> / <span id="quotaLimit">100</span>
+                        </div>
+                    </div>
+                    <div class="quota-upgrade">
+                        <a href="#" id="upgradeLink">升级到专业版 →</a>
+                    </div>
+                </div>
+                
+                <!-- 用户菜单 -->
+                <div class="user-menu">
+                    <button class="user-button" id="userButton">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name">演示用户</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="#" class="dropdown-item" id="referralLink">
+                            <span>📨</span> 推荐好友
+                        </a>
+                        <a href="#" class="dropdown-item" id="settingsLink">
+                            <span>⚙️</span> 设置
+                        </a>
+                        <a href="#" class="dropdown-item" id="helpLink">
+                            <span>❓</span> 帮助文档
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主对话区域 -->
+        <div class="main-content">
+            <!-- 欢迎页面（无对话时显示）-->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-content">
+                    <h1 class="welcome-title">
+                        <span class="welcome-icon">🌊</span>
+                        HydroNet Pro
+                    </h1>
+                    <p class="welcome-subtitle">
+                        水网智能体系统 - 您的AI水网管理助手
+                    </p>
+                    
+                    <!-- 功能卡片 -->
+                    <div class="feature-cards">
+                        <div class="feature-card" data-prompt="帮我做一个水网仿真">
+                            <div class="feature-icon">💧</div>
+                            <div class="feature-title">水网仿真</div>
+                            <div class="feature-desc">模拟水网运行，预测流量、水位</div>
+                        </div>
+                        <div class="feature-card" data-prompt="帮我做系统辨识和参数校准">
+                            <div class="feature-icon">🔍</div>
+                            <div class="feature-title">系统辨识</div>
+                            <div class="feature-desc">识别系统参数，校准模型</div>
+                        </div>
+                        <div class="feature-card" data-prompt="优化水资源调度方案">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-title">优化调度</div>
+                            <div class="feature-desc">生成最优调度方案，降低能耗</div>
+                        </div>
+                        <div class="feature-card" data-prompt="设计一个PID控制器">
+                            <div class="feature-icon">🎮</div>
+                            <div class="feature-title">控制策略</div>
+                            <div class="feature-desc">设计控制器，优化控制策略</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 提示信息 -->
+                    <div class="welcome-tips">
+                        <p>💡 <strong>提示：</strong>点击上方卡片快速开始，或在下方输入您的问题</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 对话区域（有对话时显示）-->
+            <div class="chat-area" id="chatArea" style="display: none;">
+                <!-- 对话标题 -->
+                <div class="chat-header">
+                    <h2 class="chat-title" id="chatTitle">新对话</h2>
+                    <div class="chat-actions">
+                        <button class="action-btn" id="clearChatBtn" title="清除对话">
+                            <span>🗑️</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 消息列表 -->
+                <div class="messages-container" id="messagesContainer">
+                    <div class="messages-list" id="messagesList">
+                        <!-- 消息动态加载 -->
+                    </div>
+                </div>
+                
+                <!-- 输入区域 -->
+                <div class="input-area">
+                    <div class="input-container">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput" 
+                            placeholder="向HydroNet提问...（Shift+Enter换行，Enter发送）"
+                            rows="1"
+                        ></textarea>
+                        <button class="send-button" id="sendButton">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="input-hint">HydroNet Pro由阿里云通义千问驱动</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 推荐弹窗 -->
+    <div class="modal" id="referralModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📨 推荐好友，共享福利</h3>
+                <button class="modal-close" id="closeReferralModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="referral-box">
+                    <p>您的专属推荐码：</p>
+                    <div class="referral-code">
+                        <input type="text" id="referralCodeInput" value="HYDRO2025" readonly>
+                        <button class="copy-btn" id="copyReferralCode">复制</button>
+                    </div>
+                    <div class="referral-benefits">
+                        <h4>推荐福利：</h4>
+                        <ul>
+                            <li>✅ 每推荐1位好友注册，您获得<strong>30天试用延长</strong></li>
+                            <li>✅ 好友付费后，您获得<strong>1000元现金奖励</strong></li>
+                            <li>✅ 累计推荐5位，<strong>免费升级专业版</strong></li>
+                        </ul>
+                    </div>
+                    <div class="referral-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="referralTotal">0</div>
+                            <div class="stat-label">已推荐</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="referralConverted">0</div>
+                            <div class="stat-label">已付费</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载中遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">连接中...</div>
+    </div>
+    
+    <!-- Toast通知 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- JavaScript -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main_pro.js') }}"></script>
+</body>
+</html>

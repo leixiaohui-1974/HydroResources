@@ -1,0 +1,31 @@
+# HydroNet 水网智能体系统依赖 - 阿里云完整版
+
+# Web框架
+Flask==3.0.0
+flask-cors==4.0.0
+
+# HTTP请求
+requests==2.31.0
+
+# 微信公众号支持
+xmltodict==0.13.0
+
+# 环境变量管理
+python-dotenv==1.0.0
+
+# 数据处理
+numpy==1.24.3
+pandas==2.0.3
+
+# 日志
+colorlog==6.8.0
+
+# 数据库（可选）
+SQLAlchemy==2.0.23
+
+# WSGI服务器（生产环境）
+gunicorn==21.2.0
+
+# 开发工具
+pytest==7.4.3
+pytest-cov==4.1.0

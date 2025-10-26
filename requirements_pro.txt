@@ -1,0 +1,31 @@
+# HydroNet Pro - Python依赖包
+
+# Web框架
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SocketIO==5.3.5
+python-socketio==5.10.0
+
+# 异步支持
+aiohttp==3.9.1
+asyncio==3.4.3
+
+# 阿里云通义千问SDK
+dashscope==1.14.1
+
+# 数据库
+# SQLite（Python内置，无需安装）
+
+# 工具库
+python-dotenv==1.0.0
+requests==2.31.0
+
+# WebSocket支持
+eventlet==0.34.0
+# 或使用 gevent==23.9.1（二选一）
+
+# 日志
+colorlog==6.8.0
+
+# 开发工具（可选）
+pytest==7.4.3
