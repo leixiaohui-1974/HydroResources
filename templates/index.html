@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroNet 水网智能体系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">
+                <h1>💧 HydroNet</h1>
+                <p>水网智能体系统</p>
+            </div>
+            <div class="system-info">
+                <button class="btn-info" onclick="showSystemInfo()">系统信息</button>
+                <button class="btn-services" onclick="showServices()">MCP服务</button>
+            </div>
+        </header>
+
+        <!-- 主聊天区域 -->
+        <main class="chat-container">
+            <div class="chat-header">
+                <h2>💬 智能对话</h2>
+                <button class="btn-clear" onclick="clearChat()">清空对话</button>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <!-- 欢迎消息 -->
+                <div class="message assistant">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p><strong>HydroNet AI助手</strong></p>
+                        <p>您好！我是HydroNet水网智能体系统的AI助手。</p>
+                        <p>我可以帮您：</p>
+                        <ul>
+                            <li>🌊 水网仿真与预测</li>
+                            <li>🔍 系统参数辨识</li>
+                            <li>📊 智能调度优化</li>
+                            <li>🎮 控制策略设计</li>
+                            <li>✅ 性能测试评估</li>
+                        </ul>
+                        <p>请输入您的问题开始对话！</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="userInput" 
+                        placeholder="请输入您的问题... 例如：帮我做一个水网仿真分析"
+                        rows="3"
+                    ></textarea>
+                    <button class="btn-send" onclick="sendMessage()">
+                        <span>发送</span> 📤
+                    </button>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="quickQuery('水网仿真')">🌊 水网仿真</button>
+                    <button class="quick-btn" onclick="quickQuery('系统辨识')">🔍 系统辨识</button>
+                    <button class="quick-btn" onclick="quickQuery('智能调度')">📊 智能调度</button>
+                    <button class="quick-btn" onclick="quickQuery('控制优化')">🎮 控制优化</button>
+                    <button class="quick-btn" onclick="quickQuery('性能测试')">✅ 性能测试</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 侧边栏 - MCP服务状态 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>MCP服务状态</h3>
+                <button class="btn-close" onclick="closeSidebar()">×</button>
+            </div>
+            <div class="sidebar-content" id="sidebarContent">
+                <p>加载中...</p>
+            </div>
+        </aside>
+
+        <!-- 模态框 - 系统信息 -->
+        <div class="modal" id="systemModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>系统信息</h2>
+                    <button class="btn-close" onclick="closeModal('systemModal')">×</button>
+                </div>
+                <div class="modal-body" id="systemModalBody">
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
