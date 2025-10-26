@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 HydroNet 水网智能体系统 - 主应用文件
-阿里云版本 - 纯Web应用
+阿里云版本 - Web应用 + 微信公众号（可选）
 集成阿里云通义千问大模型和MCP服务
 """
 
 from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
 import json
+import xmltodict
 from datetime import datetime
 from typing import Dict, List, Optional
 import logging
@@ -15,6 +16,7 @@ import logging
 from config import Config
 from mcp_manager import MCPServiceManager
 from qwen_client import QwenClient
+from wechat_handler import WechatMessageHandler
 
 # 配置日志
 logging.basicConfig(
@@ -36,11 +38,64 @@ qwen_client = QwenClient(
     model=Config.QWEN_MODEL
 )
 
+# 初始化微信处理器（如果启用）
+wechat_handler = None
+if Config.WECHAT_ENABLED:
+    wechat_handler = WechatMessageHandler(
+        token=Config.WECHAT_TOKEN,
+        qwen_client=qwen_client,
+        mcp_manager=mcp_manager
+    )
+    logger.info("微信公众号功能已启用")
+
 
 @app.route('/')
 def index():
     """主页 - 展示聊天界面"""
     return render_template('index.html')
+
+
+@app.route('/wechat', methods=['GET', 'POST'])
+def wechat():
+    """
+    微信公众号接入点（可选）
+    GET: 验证服务器地址
+    POST: 处理用户消息
+    """
+    if not Config.WECHAT_ENABLED or not wechat_handler:
+        return jsonify({
+            'error': '微信公众号功能未启用',
+            'tip': '请在.env中设置 WECHAT_ENABLED=true 并配置相关参数'
+        }), 404
+    
+    if request.method == 'GET':
+        # 微信服务器验证
+        signature = request.args.get('signature', '')
+        timestamp = request.args.get('timestamp', '')
+        nonce = request.args.get('nonce', '')
+        echostr = request.args.get('echostr', '')
+        
+        if wechat_handler.verify_signature(signature, timestamp, nonce):
+            logger.info("微信验证成功")
+            return echostr
+        else:
+            logger.warning("微信验证失败")
+            return 'Invalid signature', 403
+    
+    elif request.method == 'POST':
+        # 处理用户消息
+        try:
+            xml_data = request.data
+            msg_dict = xmltodict.parse(xml_data)['xml']
+            
+            logger.info(f"收到微信消息: {msg_dict.get('Content', '')[:50]}...")
+            
+            response_xml = wechat_handler.handle_message(msg_dict)
+            return response_xml
+            
+        except Exception as e:
+            logger.error(f"处理微信消息失败: {str(e)}", exc_info=True)
+            return 'success'
 
 
 
@@ -188,6 +243,10 @@ def system_info():
         'version': '2.0.0',
         'platform': 'Aliyun',
         'description': '基于阿里云通义千问大模型和MCP服务的水网智能管理系统',
+        'access_methods': {
+            'web': True,
+            'wechat': Config.WECHAT_ENABLED
+        },
         'ai_model': {
             'provider': '阿里云',
             'model': Config.QWEN_MODEL,
@@ -217,11 +276,15 @@ def get_models():
 
 if __name__ == '__main__':
     logger.info("=" * 60)
-    logger.info("🌊 HydroNet 水网智能体系统 - 阿里云版")
+    logger.info("🌊 HydroNet 水网智能体系统 - 阿里云完整版")
     logger.info("=" * 60)
     logger.info(f"🤖 AI模型: 阿里云通义千问 ({Config.QWEN_MODEL})")
     logger.info(f"🔌 MCP服务: {len(mcp_manager.list_services())} 个")
-    logger.info(f"🌐 访问地址: http://{Config.HOST}:{Config.PORT}")
+    logger.info(f"🌐 Web访问: http://{Config.HOST}:{Config.PORT}")
+    if Config.WECHAT_ENABLED:
+        logger.info(f"📱 微信接入: http://{Config.HOST}:{Config.PORT}/wechat ✅")
+    else:
+        logger.info(f"📱 微信接入: 未启用（可在.env中配置）")
     logger.info("=" * 60)
     
     # 开发环境使用debug模式，生产环境请使用gunicorn等WSGI服务器

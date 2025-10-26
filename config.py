@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-配置文件 - 阿里云版本
+配置文件 - 阿里云完整版（支持Web + 微信公众号）
 """
 
 import os
@@ -19,7 +19,7 @@ class Config:
     PORT = int(os.getenv('PORT', 5000))
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     
-    # 阿里云API配置
+    # 阿里云API配置（必需）
     ALIYUN_API_KEY = os.getenv('ALIYUN_API_KEY', 'your-api-key')
     ALIYUN_REGION = os.getenv('ALIYUN_REGION', 'cn-hangzhou')
     
@@ -27,6 +27,12 @@ class Config:
     QWEN_MODEL = os.getenv('QWEN_MODEL', 'qwen-turbo')  # 可选: qwen-turbo, qwen-plus, qwen-max
     QWEN_TEMPERATURE = float(os.getenv('QWEN_TEMPERATURE', '0.7'))
     QWEN_MAX_TOKENS = int(os.getenv('QWEN_MAX_TOKENS', '2000'))
+    
+    # 微信公众号配置（可选，如不需要可不配置）
+    WECHAT_ENABLED = os.getenv('WECHAT_ENABLED', 'false').lower() == 'true'
+    WECHAT_TOKEN = os.getenv('WECHAT_TOKEN', 'your-wechat-token')
+    WECHAT_APP_ID = os.getenv('WECHAT_APP_ID', '')
+    WECHAT_APP_SECRET = os.getenv('WECHAT_APP_SECRET', '')
     
     # MCP服务配置
     MCP_SERVICES_DIR = os.getenv('MCP_SERVICES_DIR', './mcp_services')
